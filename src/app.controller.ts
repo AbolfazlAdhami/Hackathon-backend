@@ -1,10 +1,6 @@
+import { AllowAnonymous } from '@thallesp/nestjs-better-auth';
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
-
-const AllowAnonymous = async (...args: any[]) => {
-  const { AllowAnonymous } = await import('@thallesp/nestjs-better-auth');
-  return AllowAnonymous(...args);
-};
 
 @Controller()
 export class AppController {
