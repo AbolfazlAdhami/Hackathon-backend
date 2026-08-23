@@ -3,9 +3,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { ArcjetGuard, ArcjetModule, fixedWindow, shield } from '@arcjet/nest';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
     ArcjetModule.forRoot({
       isGlobal: true,
       key: process.env.ARCJET_KEY!,
