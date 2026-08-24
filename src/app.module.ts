@@ -1,35 +1,19 @@
-import { Module, NestModule } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
-import { ArcjetGuard, ArcjetModule, fixedWindow, shield } from '@arcjet/nest';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './auth/auth.module';
+import { PrismaModule } from './lib/database/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UserModule } from './modules/user/user.module';
+import { HaketonModule } from './modules/haketon/haketon.module';
+import { RateLimiterMiddleware } from './common/middleware/rate-limiter.middleware';
 
 @Module({
-  imports: [
-    AuthModule,
-    ArcjetModule.forRoot({
-      isGlobal: true,
-      key: process.env.ARCJET_KEY!,
-      rules: [
-        shield({ mode: 'LIVE' }),
-        fixedWindow({
-          mode: 'DRY_RUN',
-          window: '60s',
-          max: 100,
-        }),
-      ],
-    }),
-  ],
+  imports: [PrismaModule, AuthModule, UserModule, HaketonModule],
   controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_GUARD,
-      useClass: ArcjetGuard,
-    },
-  ],
+  providers: [AppService],
 })
 export class AppModule implements NestModule {
-  configure() {}
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RateLimiterMiddleware).forRoutes('*');
+  }
 }
