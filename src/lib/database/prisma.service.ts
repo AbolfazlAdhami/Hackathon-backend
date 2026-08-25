@@ -1,4 +1,9 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 
 import 'dotenv/config';
 
@@ -7,7 +12,7 @@ import { Pool } from 'pg';
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private pool: Pool;
-
+  private readonly logger = new Logger(PrismaService.name);
   constructor() {
     this.pool = new Pool({
       connectionString: process.env.DATABASE_URL,
@@ -49,7 +54,8 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    await this.pool.end();
+    await this.$disconnect();
+    this.logger.log('🛑 Disconnected from Database');
   }
 
   user = {

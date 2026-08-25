@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  NotFoundException,
+  UseGuards,
+} from '@nestjs/common';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { CreateHackathonDto } from './dto/haketon.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth/jwt-auth.guard';
@@ -54,7 +62,9 @@ export class HaketonController {
       where: { id },
       include: {
         author: { select: { id: true, name: true, email: true } },
-        participants: { include: { user: { select: { id: true, name: true, email: true } } } },
+        participants: {
+          include: { user: { select: { id: true, name: true, email: true } } },
+        },
       },
     });
 
