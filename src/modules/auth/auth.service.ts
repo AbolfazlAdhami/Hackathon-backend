@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../lib/database/prisma.service';
 import { SignUpDto, SignInDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
@@ -9,9 +13,10 @@ export class AuthService {
   constructor(private prisma: PrismaService) {}
 
   async signUp(dto: SignUpDto) {
-    const existingUser = await this.prisma.user.findUnique({
+    // Ensure proper typing for Prisma responses to avoid unsafe operations
+    const existingUser = (await this.prisma.user.findUnique({
       where: { email: dto.email },
-    });
+    })) as { id: string; email: string } | null;
 
     if (existingUser) {
       throw new BadRequestException('Email already in use');
@@ -38,9 +43,15 @@ export class AuthService {
   }
 
   async signIn(dto: SignInDto) {
-    const user = await this.prisma.user.findUnique({
+    const user = (await this.prisma.user.findUnique({
       where: { email: dto.email },
-    });
+    })) as {
+      id: string;
+      email: string;
+      password: string;
+      role?: string;
+      name?: string;
+    } | null;
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -63,11 +74,12 @@ export class AuthService {
   }
 
   private generateToken(user: any) {
-    const secret = process.env.AUTH_SECRET || 'super-secret-auth-key-change-in-production';
+    const secret =
+      process.env.AUTH_SECRET || 'super-secret-auth-key-change-in-production';
     return jwt.sign(
       { sub: user.id, email: user.email, role: user.role },
       secret,
-      { expiresIn: '1d' }
+      { expiresIn: '1d' },
     );
   }
 }

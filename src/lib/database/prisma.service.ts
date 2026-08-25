@@ -1,4 +1,7 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+
+import 'dotenv/config';
+
 import { Pool } from 'pg';
 
 @Injectable()
@@ -7,7 +10,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   constructor() {
     this.pool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/nest_hackathon',
+      connectionString: process.env.DATABASE_URL,
     });
   }
 
@@ -50,10 +53,17 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   user = {
-    findUnique: async (args: { where: { id?: string; email?: string }; select?: any; include?: any }) => {
+    findUnique: async (args: {
+      where: { id?: string; email?: string };
+      select?: any;
+      include?: any;
+    }) => {
       const field = args.where.email ? 'email' : 'id';
       const val = args.where.email || args.where.id;
-      const res = await this.pool.query(`SELECT * FROM "user" WHERE ${field} = $1`, [val]);
+      const res = await this.pool.query(
+        `SELECT * FROM "user" WHERE ${field} = $1`,
+        [val],
+      );
       if (res.rows.length === 0) return null;
       const row = res.rows[0];
       const user: any = {
@@ -64,11 +74,14 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         role: row.role,
         createdAt: row.createdat,
         updatedAt: row.updatedat,
-        hackathons: []
+        hackathons: [],
       };
 
       if (args.include?.hackathons) {
-        const hakRes = await this.pool.query('SELECT * FROM hackathon WHERE authorId = $1', [user.id]);
+        const hakRes = await this.pool.query(
+          'SELECT * FROM hackathon WHERE authorId = $1',
+          [user.id],
+        );
         user.hackathons = hakRes.rows;
       }
       return user;
@@ -76,7 +89,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
     findMany: async (args?: { select?: any }) => {
       const res = await this.pool.query('SELECT * FROM "user"');
-      return res.rows.map(row => ({
+      return res.rows.map((row) => ({
         id: row.id,
         name: row.name,
         email: row.email,
@@ -87,11 +100,19 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       }));
     },
 
-    create: async (args: { data: { name: string; email: string; password: string; role?: string } }) => {
+    create: async (args: {
+      data: { name: string; email: string; password: string; role?: string };
+    }) => {
       const id = 'user_' + Math.random().toString(36).substring(2, 9);
       const res = await this.pool.query(
         'INSERT INTO "user" (id, name, email, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [id, args.data.name, args.data.email, args.data.password, args.data.role || 'PARTICIPANT']
+        [
+          id,
+          args.data.name,
+          args.data.email,
+          args.data.password,
+          args.data.role || 'PARTICIPANT',
+        ],
       );
       const row = res.rows[0];
       return {
@@ -113,7 +134,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       for (const row of res.rows) {
         let author = null;
         if (args?.include?.author) {
-          const authorRes = await this.pool.query('SELECT id, name, email FROM "user" WHERE id = $1', [row.authorid]);
+          const authorRes = await this.pool.query(
+            'SELECT id, name, email FROM "user" WHERE id = $1',
+            [row.authorid],
+          );
           author = authorRes.rows[0];
         }
         results.push({
@@ -133,23 +157,29 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     },
 
     findUnique: async (args: { where: { id: string }; include?: any }) => {
-      const res = await this.pool.query('SELECT * FROM hackathon WHERE id = $1', [args.where.id]);
+      const res = await this.pool.query(
+        'SELECT * FROM hackathon WHERE id = $1',
+        [args.where.id],
+      );
       if (res.rows.length === 0) return null;
       const row = res.rows[0];
       let author = null;
       if (args?.include?.author) {
-        const aRes = await this.pool.query('SELECT id, name, email FROM "user" WHERE id = $1', [row.authorid]);
+        const aRes = await this.pool.query(
+          'SELECT id, name, email FROM "user" WHERE id = $1',
+          [row.authorid],
+        );
         author = aRes.rows[0];
       }
       let participants: any[] = [];
       if (args?.include?.participants) {
         const pRes = await this.pool.query(
           'SELECT p.*, u.id as uid, u.name as uname, u.email as uemail FROM hackathon_participant p JOIN "user" u ON p.user_id = u.id WHERE p.hackathon_id = $1',
-          [row.id]
+          [row.id],
         );
-        participants = pRes.rows.map(p => ({
+        participants = pRes.rows.map((p) => ({
           id: p.id,
-          user: { id: p.uid, name: p.uname, email: p.uemail }
+          user: { id: p.uid, name: p.uname, email: p.uemail },
         }));
       }
       return {
@@ -167,11 +197,26 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       };
     },
 
-    create: async (args: { data: { name: string; description?: string; startsAt: Date; endsAt: Date; authorId: string } }) => {
+    create: async (args: {
+      data: {
+        name: string;
+        description?: string;
+        startsAt: Date;
+        endsAt: Date;
+        authorId: string;
+      };
+    }) => {
       const id = 'hak_' + Math.random().toString(36).substring(2, 9);
       const res = await this.pool.query(
         'INSERT INTO hackathon (id, name, description, startsAt, endsAt, authorId) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-        [id, args.data.name, args.data.description, args.data.startsAt, args.data.endsAt, args.data.authorId]
+        [
+          id,
+          args.data.name,
+          args.data.description,
+          args.data.startsAt,
+          args.data.endsAt,
+          args.data.authorId,
+        ],
       );
       const row = res.rows[0];
       return {
